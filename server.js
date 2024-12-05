@@ -7,6 +7,7 @@ const PORT = process.env.PORT || 3000
 const productRoute = require('./Routes/productRoute')
 const errorMiddleware = require('./middleware/errorMiddleware')
 const cors = require('cors')
+const userRoute = require('./Routes/userRoute');
 
 app.get('/', (req, res) => {
     res.send('Hello Node API');
@@ -17,6 +18,7 @@ app.use(express.urlencoded({extended:false}))
 app.use('/',productRoute);
 app.use(errorMiddleware)
 app.use(cors())
+app.use('/api/users', userRoute);
 
 
 

@@ -4,8 +4,7 @@ const asyncHandler = require('express-async-handler')
 const getAllproducts =  asyncHandler(async(req, res) => {
     try{
       const products = await Product.find({});
-     res.status(200)
-     throw new Error(products)
+     res.status(200).json(product)
     }catch(error){
         res.status(500)
         throw new Error(error.message);
@@ -17,8 +16,7 @@ const getAllproducts =  asyncHandler(async(req, res) => {
     try{
         const{id} =req.params;
         const product = await Product.findById(id);
-        res.status(200)
-        throw new Error(product)
+        res.status(200).json(product)
     }catch(error){    
         res.status(500)
         throw new Error(error.message);
@@ -29,8 +27,7 @@ const getAllproducts =  asyncHandler(async(req, res) => {
 const createProduct = asyncHandler(async (req, res) => {
     try {
         const product = await Product.create(req.body); // Use the correct model name
-        res.status(200)
-        throw new Error(product)
+        res.status(200).json(product)
     } catch (error) {
         console.error(error.message); // Log error
         res.status(500)
