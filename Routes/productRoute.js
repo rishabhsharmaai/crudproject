@@ -1,24 +1,22 @@
-const express = require('express')
-const Product = require('../models/productModel');
-const {getAllproducts, deletebyID} = require('../controllers/productControllers')
-const {getProductByID} = require('../controllers/productControllers')
-const {createProduct} = require('../controllers/productControllers')
-const {updatebyId} = require('../controllers/productControllers')
-const {deletebyId} = require('../controllers/productControllers')
+const express = require('express');
+const {
+    getAllProducts,
+    getProductByID,
+    createProduct,
+    updateById,
+    deleteById,
+} = require('../controllers/productController');
+const {generatePDF} = require("../controllers/pdfController");
+const upload = require('../middleware/upload'); 
+const router = express.Router();
 
-const router = express.Router()
-// Routes  
-router.get('/getAllproducts',getAllproducts);
- 
- //get by id
- router.get('/getProduct/:id',getProductByID);
- 
- router.post('/createProduct',createProduct);
- 
- // Update product by ID
- router.put('/update/:id',updatebyId);
- 
- // Delete product by ID
- router.delete('/delete/:id',deletebyId);
+// Define routes for products
+router.get('/getAllproducts', getAllProducts); // GET all products
+router.get('/getProduct/:id', getProductByID); // POST to create a product
+router.post('/createProduct', upload.single('image'), createProduct);  // Correct route for product creation
+router.put('/update/:id', updateById); // PUT to update a product by ID
+router.delete('/delete/:id', deleteById); // DELETE a product by 
+router.get('/generate-pdf/:proId', generatePDF);
 
- module.exports=router;
+
+module.exports = router;

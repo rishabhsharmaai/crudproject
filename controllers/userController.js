@@ -1,15 +1,20 @@
 const User = require('../models/userModel');
-const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const asyncHandler = require('express-async-handler');
+const nodemailer = require('nodemailer');
+const jwt = require('jsonwebtoken');
 
-// Generate JWT
-const generateToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30m' });
-};
+// SMTP Transport Configuration
+const transporter = nodemailer.createTransport({
+    service: 'Gmail', 
+    auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+    },
+});
 
-// Signup user
+// Register User
 const registerUser = asyncHandler(async (req, res) => {
     const { name, email, password } = req.body;
 
@@ -18,20 +23,24 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new Error('Please add all fields');
     }
 
+    // Check if user already exists
     const userExists = await User.findOne({ email });
     if (userExists) {
         res.status(400);
         throw new Error('User already exists');
     }
 
-    const user = await User.create({ name, email, password });
+    // Hash password before saving
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create new user
+    const user = await User.create({ name, email, password: hashedPassword });
 
     if (user) {
         res.status(201).json({
             _id: user.id,
             name: user.name,
             email: user.email,
-            token: generateToken(user.id),
         });
     } else {
         res.status(400);
@@ -39,18 +48,20 @@ const registerUser = asyncHandler(async (req, res) => {
     }
 });
 
-// Login user
 const loginUser = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 
     const user = await User.findOne({ email });
 
     if (user && (await bcrypt.compare(password, user.password))) {
+ 
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
         res.json({
             _id: user.id,
             name: user.name,
             email: user.email,
-            token: generateToken(user.id),
+            token, 
         });
     } else {
         res.status(401);
@@ -58,13 +69,13 @@ const loginUser = asyncHandler(async (req, res) => {
     }
 });
 
-// Get user profile
+// Get User Profile
 const getUserProfile = asyncHandler(async (req, res) => {
     const user = await User.findById(req.user.id).select('-password');
     res.json(user);
 });
 
-// Forgot password
+// Forgot Password (OTP Generation)
 const forgotPassword = asyncHandler(async (req, res) => {
     const { email } = req.body;
 
@@ -74,37 +85,53 @@ const forgotPassword = asyncHandler(async (req, res) => {
         throw new Error('User not found');
     }
 
-    // Generate reset token
-    const resetToken = crypto.randomBytes(20).toString('hex');
-    user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-    user.resetPasswordExpire = Date.now() + 30 * 60 * 1000; // 30 minutes
+    // Generate 4-digit OTP
+    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+    user.resetPasswordOTP = otp;
+    user.resetPasswordExpire = Date.now() + 30 * 60 * 1000; // OTP expires in 30 minutes
     await user.save();
 
-    // Send token to user (mock response here)
-    res.status(200).json({
-        message: 'Reset token generated',
-        resetToken,
+    // Send OTP via email
+    const mailOptions = {
+        from: process.env.SMTP_USER,
+        to: email,
+        subject: 'Password Reset OTP',
+        text: `Your password reset OTP is: ${otp}`,
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+            console.error(error);
+            res.status(500);
+            throw new Error('Failed to send OTP');
+        } else {
+            res.status(200).json({ message: 'OTP sent successfully' });
+        }
     });
 });
 
-// Reset password
+// Reset Password
 const resetPassword = asyncHandler(async (req, res) => {
-    const { resetToken, newPassword } = req.body;
+    const { email, otp, newPassword } = req.body;
 
-    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-    const user = await User.findOne({
-        resetPasswordToken: hashedToken,
-        resetPasswordExpire: { $gt: Date.now() },
-    });
-
+    const user = await User.findOne({ email });
     if (!user) {
-        res.status(400);
-        throw new Error('Invalid or expired reset token');
+        res.status(404);
+        throw new Error('User not found');
     }
 
+    // Validate OTP and expiration
+    if (!user.resetPasswordOTP || user.resetPasswordOTP !== otp || user.resetPasswordExpire < Date.now()) {
+        res.status(400);
+        throw new Error('Invalid or expired OTP');
+    }
+
+    // Hash new password before saving
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
     // Update password
-    user.password = newPassword;
-    user.resetPasswordToken = undefined;
+    user.password = hashedPassword;
+    user.resetPasswordOTP = undefined;
     user.resetPasswordExpire = undefined;
     await user.save();
 

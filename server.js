@@ -1,29 +1,34 @@
-require('dotenv').config()
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
+const cors = require('cors');
 const app = express();
-const MONGO_URL =process.env.MONGO_URL
-const PORT = process.env.PORT || 3000
-const productRoute = require('./Routes/productRoute')
-const errorMiddleware = require('./middleware/errorMiddleware')
-const cors = require('cors')
+const path= require('path');
+
+const MONGO_URL = process.env.MONGO_URL;
+const PORT = process.env.PORT || 3000;
+
+const errorMiddleware = require('./middleware/errorMiddleware');
 const userRoute = require('./Routes/userRoute');
+const productRoute = require('./Routes/productRoute');
+const categoryRoute = require('./Routes/categoryRoute');
+
+
+app.use(cors());  
+app.use(express.json());  
+app.use(express.urlencoded({ extended: false })); 
+app.use('/uploads', express.static('uploads'));
+app.use('/pdfs', express.static(path.join(__dirname, 'pdfs')));
 
 app.get('/', (req, res) => {
     res.send('Hello Node API');
 });
+app.use('/api/users', userRoute);  
+app.use('/api/products', productRoute);  
+app.use('/pdf', productRoute); 
+app.use('/api/categories', categoryRoute);
+app.use(errorMiddleware);
 
-app.use(express.json());
-app.use(express.urlencoded({extended:false}))
-app.use('/',productRoute);
-app.use(errorMiddleware)
-app.use(cors())
-app.use('/api/users', userRoute);
-
-
-
-
-// MongoDB Connection
 mongoose.set("strictQuery", false);
 
 mongoose.connect(MONGO_URL)

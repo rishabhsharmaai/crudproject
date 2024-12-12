@@ -1,5 +1,4 @@
 const errorMiddleware = (err, req, res, next) => {
-    console.log('This is an error middleware');
     const statusCode = res.statusCode ? res.statusCode : 500; 
     res.status(statusCode); 
     res.json({
