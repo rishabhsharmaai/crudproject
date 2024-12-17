@@ -1,43 +1,16 @@
 const mongoose = require('mongoose');
+
 const productSchema = new mongoose.Schema({
-    name: {
-        type: String,
-        required: [true, "Please enter product name"]
-    },
-    quantity: {
-        type: Number,
-        required: [true
-
-        ],
-        min: [0, 'Quantity cannot be negative']
-    },
-    price: {
-        type: Number,
-        required: true
-    },
-    image: {
-        type: String,
-        required: true
-    },
-    user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
-    buyer: {
-        type: mongoose.Schema.Types.ObjectId, 
-        default: null  
-    },
-    pdfUrl: {
-        type: String,
-        default: null,
-    },
-
-}, {
-    timestamps: true
+    name: { type: String, required: true },
+    price: { type: Number, required: true },
+    quantity: { type: Number, required: true },
+    image: { type: String, default: "" },
+    isSold: { type: Boolean, default: false },  // Ensure this is set to false
+    buyer: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }, // Set default buyer to null
+    createdAt: { type: Date, default: Date.now }
 });
 
 
-const Product = mongoose.model('Product', productSchema);
+module.exports = mongoose.model('Product', productSchema);
 
-module.exports = Product;
+

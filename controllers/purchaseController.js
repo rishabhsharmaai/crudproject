@@ -1,38 +1,72 @@
 const Product = require('../models/productModel');
-const User = require("../models/userModel")
+const User = require("../models/userModel");
 const asyncHandler = require('express-async-handler');
-const jwt = require("jsonwebtoken")
+const Purchase = require("../models/puchaseModel")
+const jwt = require("jsonwebtoken");
+const mongoose = require("mongoose");
 
 const purchaseProduct = asyncHandler(async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
     try {
-        const { productId } = req.body
-        let decodedUser
+        const { productId } = req.body;
+        console.log("Received Product ID:", productId);
+
+        if (!mongoose.isValidObjectId(productId)) {
+            return res.status(400).json({ message: "Invalid product ID format." });
+        }
+
+        let decodedUser;
         if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-            token = req.headers.authorization.split(' ')[1];
-            decodedUser = decode = jwt.decode(token, process.env.JWT_SECRET)
+            const token = req.headers.authorization.split(' ')[1];
+            decodedUser = jwt.verify(token, process.env.JWT_SECRET); 
+            console.log("Decoded User:", decodedUser);
+        } else {
+            return res.status(401).json({ message: 'Unauthorized: No token provided.' });
         }
 
-        if (!decodedUser || decodedUser.role != 'buyer') {
-            return res.status(403).json({ message: 'Access forbidden: only buyers can purchase products' });
+        if (!decodedUser || decodedUser.role !== 'buyer') {
+            return res.status(403).json({ message: 'Access forbidden: only buyers can purchase products.' });
         }
-        const userDetails = await User.findById(decodedUser.id)
-        const product = await Product.findById(productId).populate('user');
+
+        const userDetails = await User.findById(decodedUser.id);
+        if (!userDetails) {
+            return res.status(404).json({ message: 'User not found.' });
+        }
+
+        const product = await Product.findById(productId).session(session); 
+        console.log("Product Query Result:", product); 
+
         if (!product) {
-            return res.status(404).json({ message: 'Product not found' });
+            return res.status(404).json({ message: 'Product not found.' });
         }
+
         if (product.isSold) {
-            return res.status(400).json({ message: 'Product already sold' });
+            return res.status(400).json({ message: 'Product already sold.' });
         }
 
-        if (product.buyer) {
-            return res.status(400).json({ message: 'Product already purchased' });
+        const updatedProduct = await Product.updateOne(
+            { _id: productId, isSold: false }, 
+            {
+                $set: {
+                    isSold: true,
+                    buyer: decodedUser.id
+                }
+            }).session(session); 
+        if (updatedProduct.nModified === 0) {
+            return res.status(400).json({ message: "Failed to update product. It may already be marked as sold." });
         }
-
-        product.isSold = true;
-        product.buyer = decodedUser._id;
-
-        await product.save();
-
+        
+        await session.commitTransaction();
+        session.endSession();
+        const purchaseData = {
+            buyer: decodedUser.id,
+            product: productId,
+            status: "Pending"
+        }
+        const newPurchase = await Purchase.create(purchaseData)
+        console.log(newPurchase)
         res.status(200).json({
             message: 'Purchase successful',
             product: {
@@ -51,10 +85,12 @@ const purchaseProduct = asyncHandler(async (req, res) => {
         });
 
     } catch (error) {
-        console.log(error)
+        await session.abortTransaction();
+        session.endSession();
+
+        console.error("Error in purchaseProduct:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
     }
 });
 
 module.exports = { purchaseProduct };
-
-

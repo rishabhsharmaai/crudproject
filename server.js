@@ -12,6 +12,7 @@ const errorMiddleware = require('./middleware/errorMiddleware');
 const userRoute = require('./Routes/userRoute');
 const productRoute = require('./Routes/productRoute');
 const categoryRoute = require('./Routes/categoryRoute');
+const purchaseRoute = require('./Routes/purchaseRoute'); 
 const { purchaseProduct } = require('./controllers/purchaseController');
 
 
@@ -29,6 +30,7 @@ app.use('/api/products', productRoute);
 app.use('/pdf', productRoute); 
 app.use('/api/categories', categoryRoute);
 app.use('/api', purchaseProduct);
+app.use('/api', purchaseRoute);  
 
 app.use(errorMiddleware);
 
