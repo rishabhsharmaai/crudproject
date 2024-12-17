@@ -3,18 +3,31 @@ const path = require('path');
 const PDFKit = require('pdfkit');
 const axios = require('axios');
 const Product = require('../models/productModel');
-const User = require('../models/userModel');
-const mongoose = require("mongoose");
+const asyncHandler = require('express-async-handler');
+const jwt=require("jsonwebtoken")
 
-const generatePDF = async (req, res) => {
+const generatePDF = asyncHandler(async (req, res) => {
     const { proId } = req.params;
+    let user
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+        token = req.headers.authorization.split(' ')[1];
+        user = decode = jwt.decode(token, process.env.JWT_SECRET)
+    }
 
     try {
-        const product = await Product.findById(proId).populate('user'); 
+        const product = await Product.findById(proId).populate('user');
+        console.log(product,user)
         if (!product) {
             return res.status(404).json({ message: 'Product not found' });
         }
 
+        // if (user.role === 'seller' && String(product.user._id) !== String(user.id)) {
+        //     return res.status(403).json({ message: 'Access forbidden: cannot generate PDF for this product' });
+        // }
+
+        if (user.role === 'buyer' && (!product.isSold || String(product.buyer?._id) !== String(user.id))) {
+            return res.status(403).json({ message: 'Access forbidden: this product is not associated with you' });
+        }
         const fileName = `${product.name}_product.pdf`;
         const filePath = path.join(__dirname, '../pdfs', fileName);
 
@@ -27,40 +40,45 @@ const generatePDF = async (req, res) => {
         const writeStream = fs.createWriteStream(filePath);
         doc.pipe(writeStream);
 
+        if (product.image) {
+            const imagePath = path.join(__dirname, '../uploads', product.image.split('/uploads/')[1]);
+            const isImageLocal = fs.existsSync(imagePath);
+
+            try {
+                if (isImageLocal) {
+                    doc.image(imagePath, 400, 50, { width: 150, height: 150 });
+                } else {
+                    const response = await axios.get(product.image, { responseType: 'arraybuffer' });
+                    const imageBuffer = Buffer.from(response.data, 'binary');
+                    doc.image(imageBuffer, 400, 50, { width: 150, height: 150 });
+                }
+            } catch (error) {
+                console.log('Error fetching remote image:', error.message);
+                doc.text('Image could not be loaded.');
+            }
+        }
 
         doc.fontSize(20).text('Product Details', { align: 'center' });
-        doc.moveDown();
+        doc.moveDown(3);
         doc.fontSize(15).text(`Product ID: ${product._id}`);
         doc.text(`Name: ${product.name}`);
         doc.text(`Quantity: ${product.quantity}`);
         doc.text(`Price: ${product.price}`);
-        if (product.image) {
-            doc.text(`Image URL: ${product.image}`);
-            const imagePath = path.join(__dirname, '../uploads', product.image); 
-            const isImageLocal = fs.existsSync(imagePath);
-
-            if (isImageLocal) {
-                doc.image(imagePath, { fit: [250, 250], align: 'center', valign: 'top' });
-            } else {
-                try {
-                    const response = await axios.get(product.image, { responseType: 'arraybuffer' });
-                    const imageBuffer = Buffer.from(response.data, 'binary');
-                    doc.image(imageBuffer, { fit: [250, 250], align: 'center', valign: 'top' });
-                } catch (error) {
-                    console.log('Error fetching remote image:', error.message);
-                }
-            }
-        }
         doc.moveDown();
-
-        if (product.user) {
-            doc.fontSize(18).text('Added By (User)', { underline: true });
+        
+        if (user.role === 'buyer') {
+            doc.fontSize(18).text('Your Details (Buyer)', { underline: true });
             doc.moveDown();
-            doc.fontSize(15).text(`User ID: ${product.user._id}`);
-            doc.text(`Name: ${product.user.name}`);
-            doc.text(`Email: ${product.user.email}`);
+            doc.text(`Name: ${user.name}`);
+            doc.text(`Email: ${user.email}`);
+            doc.text('Your product will be delivered soon.');
+        } else if (user.role === 'seller' && product.isSold) {
+            doc.fontSize(18).text('Buyer Details', { underline: true });
+            doc.moveDown();
+            doc.text(`Name: ${product.buyer?.name}`);
+            doc.text(`Email: ${product.buyer?.email}`);
         } else {
-            doc.fontSize(15).text('No user associated with this product.');
+            doc.fontSize(15).text('Product not sold yet. Still looking for a buyer.');
         }
 
         doc.end();
@@ -72,7 +90,6 @@ const generatePDF = async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: 'Error generating PDF', error: error.message });
     }
-};
+});
 
 module.exports = { generatePDF };
-

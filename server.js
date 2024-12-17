@@ -12,12 +12,13 @@ const errorMiddleware = require('./middleware/errorMiddleware');
 const userRoute = require('./Routes/userRoute');
 const productRoute = require('./Routes/productRoute');
 const categoryRoute = require('./Routes/categoryRoute');
+const { purchaseProduct } = require('./controllers/purchaseController');
 
 
 app.use(cors());  
 app.use(express.json());  
 app.use(express.urlencoded({ extended: false })); 
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/pdfs', express.static(path.join(__dirname, 'pdfs')));
 
 app.get('/', (req, res) => {
@@ -27,6 +28,8 @@ app.use('/api/users', userRoute);
 app.use('/api/products', productRoute);  
 app.use('/pdf', productRoute); 
 app.use('/api/categories', categoryRoute);
+app.use('/api', purchaseProduct);
+
 app.use(errorMiddleware);
 
 mongoose.set("strictQuery", false);

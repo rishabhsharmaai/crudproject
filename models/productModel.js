@@ -8,7 +8,7 @@ const productSchema = new mongoose.Schema({
         type: Number,
         required: [true
 
-        ], // Check this line
+        ],
         min: [0, 'Quantity cannot be negative']
     },
     price: {
@@ -23,6 +23,10 @@ const productSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true
+    },
+    buyer: {
+        type: mongoose.Schema.Types.ObjectId, 
+        default: null  
     },
     pdfUrl: {
         type: String,

@@ -16,6 +16,11 @@ const userSchema = new mongoose.Schema(
             type: String,
             required: [true, 'Please add a password'],
         },
+        role: {
+            type: String,
+            enum: ['admin', 'seller', 'buyer'],
+            default:'buyer'
+        },
         resetPasswordOTP: {
             type: String,
         },
@@ -26,7 +31,6 @@ const userSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-// Password hashing before saving
 userSchema.pre('save', async function (next) {
     if (!this.isModified('password')) return next();
 
@@ -35,16 +39,14 @@ userSchema.pre('save', async function (next) {
     next();
 });
 
-// Method to compare password with the entered password
 userSchema.methods.matchPassword = async function (enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password);
 };
 
-// Generate OTP for password reset
 userSchema.methods.generateOTP = function () {
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
     this.resetPasswordOTP = bcrypt.hashSync(otp, 10);
-    this.resetPasswordExpire = Date.now() + 30 * 60 * 1000; // OTP expires in 30 minutes
+    this.resetPasswordExpire = Date.now() + 30 * 60 * 1000;
     return otp;
 };
 

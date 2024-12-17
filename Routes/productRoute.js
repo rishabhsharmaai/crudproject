@@ -1,22 +1,21 @@
 const express = require('express');
+const { protect, roleAuth } = require('../middleware/authMiddleware');
 const {
     getAllProducts,
     getProductByID,
     createProduct,
     updateById,
-    deleteById,
+    deleteById
 } = require('../controllers/productController');
-const {generatePDF} = require("../controllers/pdfController");
-const upload = require('../middleware/upload'); 
+const { generatePDF } = require('../controllers/pdfController');
+const upload = require('../middleware/upload');
 const router = express.Router();
 
-// Define routes for products
-router.get('/getAllproducts', getAllProducts); // GET all products
-router.get('/getProduct/:id', getProductByID); // POST to create a product
-router.post('/createProduct', upload.single('image'), createProduct);  // Correct route for product creation
-router.put('/update/:id', updateById); // PUT to update a product by ID
-router.delete('/delete/:id', deleteById); // DELETE a product by 
-router.get('/generate-pdf/:proId', generatePDF);
-
+router.get('/getAllproducts', getAllProducts); 
+router.get('/getProduct/:id', getProductByID); 
+router.post('/createProduct',protect, roleAuth(['admin', 'seller']), upload.single('image'), createProduct); 
+router.put('/update/:id',  protect, roleAuth(['admin', 'seller']),updateById); 
+router.delete('/delete/:id',protect, roleAuth('admin'), deleteById);
+router.get('/generate-pdf/:proId', protect, roleAuth(['seller', 'buyer','admin']), generatePDF);
 
 module.exports = router;

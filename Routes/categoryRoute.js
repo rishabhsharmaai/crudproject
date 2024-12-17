@@ -1,20 +1,30 @@
 const express = require('express');
-const { 
-    createCategory, 
-    getAllCategories, 
-    getSubcategories, 
-    deleteCategory 
+const { protect, roleAuth } = require('../middleware/authMiddleware');
+const {
+    createCategory,
+    getAllCategories,
+    getSubcategories,
+    deleteCategory,
 } = require('../controllers/categoryController');
 
 const router = express.Router();
 
-router.post('/create', createCategory);
+router.post(
+    '/create',
+    protect, roleAuth(['admin']), 
+    createCategory
+);
 
-router.get('/', getAllCategories);
+router.get('/', protect, getAllCategories);
 
-router.get('/:categoryId/subcategories', getSubcategories);
+router.get('/:categoryId/subcategories', protect, getSubcategories);
 
-router.delete('/:id', deleteCategory);
+router.delete(
+    '/:id',
+    protect,
+    roleAuth(['admin']),
+    deleteCategory
+);
 
 module.exports = router;
 

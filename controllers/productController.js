@@ -30,27 +30,31 @@ const createProduct = asyncHandler(async (req, res) => {
     try {
         const { name, price, quantity, user, parentCategory, subCategory } = req.body;
 
+        
+
         if (!name || !price || !quantity || !user || !parentCategory || !subCategory) {
-            res.status(400).json({ message: 'Missing required fields' });
-            return;
+            return res.status(400).json({ message: 'Missing required fields' });
         }
 
         const parent = await Category.findById(parentCategory);
         if (!parent) {
-            res.status(404).json({ message: 'Parent category not found' });
-            return;
+            return res.status(404).json({ message: 'Parent category not found' });
         }
 
-        const subcategory = await Category.findOne({ _id: subCategory, parentCategory: parentCategory });
+        const subcategory = await Category.findOne({
+            _id: subCategory,
+            parentCategory: parentCategory,
+        });
         if (!subcategory) {
-            res.status(400).json({ message: 'Invalid subcategory or it does not belong to the specified parent category' });
-            return;
+            return res.status(400).json({
+                message: 'Invalid subcategory or it does not belong to the specified parent category',
+            });
         }
 
         if (!req.file) {
-            res.status(400).json({ message: 'Image is required' });
-            return;
+            return res.status(400).json({ message: 'Image is required' });
         }
+
         const imageUrl = `/uploads/${req.file.filename}`;
         const pdfUrl = `${req.protocol}://${req.get('host')}/pdfs/${name}_product.pdf`;
 
@@ -59,14 +63,19 @@ const createProduct = asyncHandler(async (req, res) => {
             price,
             quantity,
             image: imageUrl,
-            user,
+            user: req.user._id,
             pdfUrl,
-            category: subCategory 
+            parentCategory,
+            subCategory
         });
 
-        res.status(201).json(product);
+        res.status(201).json({
+            message: 'Product created successfully',
+            product,
+        });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Error creating product:', error.message);
+        res.status(500).json({ message: 'Error creating product', error: error.message });
     }
 });
 
@@ -105,10 +114,13 @@ const deleteById = asyncHandler(async (req, res) => {
     }
 });
 
+
+
+
 module.exports = {
     getAllProducts,
     getProductByID,
     createProduct,
     updateById,
-    deleteById,
+    deleteById
 };
