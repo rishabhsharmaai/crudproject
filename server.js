@@ -11,6 +11,7 @@ const PORT = process.env.PORT || 3000;
 const errorMiddleware = require('./middleware/errorMiddleware');
 const userRoute = require('./Routes/userRoute');
 const productRoute = require('./Routes/productRoute');
+const adminRoute = require('./Routes/adminRoute');
 const categoryRoute = require('./Routes/categoryRoute');
 const purchaseRoute = require('./Routes/purchaseRoute'); 
 const { purchaseProduct } = require('./controllers/purchaseController');
@@ -29,6 +30,7 @@ app.get('/', (req, res) => {
 });
 app.use('/api/seller', sellerRoute); 
 app.use('/api/buyer', buyerRoute);
+app.use('/api/admin',adminRoute);
 app.use('/api/users', userRoute);  
 app.use('/api/products', productRoute);  
 app.use('/pdf', productRoute); 
