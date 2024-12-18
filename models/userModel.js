@@ -51,4 +51,3 @@ userSchema.methods.generateOTP = function () {
 };
 
 module.exports = mongoose.model('User', userSchema);
-

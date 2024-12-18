@@ -5,12 +5,11 @@ const productSchema = new mongoose.Schema({
     price: { type: Number, required: true },
     quantity: { type: Number, required: true },
     image: { type: String, default: "" },
-    isSold: { type: Boolean, default: false },  // Ensure this is set to false
-    buyer: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }, // Set default buyer to null
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, 
+    isSold: { type: Boolean, default: false }, 
+    buyer: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }, 
     createdAt: { type: Date, default: Date.now }
 });
 
 
 module.exports = mongoose.model('Product', productSchema);
-
-

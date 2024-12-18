@@ -14,6 +14,8 @@ const productRoute = require('./Routes/productRoute');
 const categoryRoute = require('./Routes/categoryRoute');
 const purchaseRoute = require('./Routes/purchaseRoute'); 
 const { purchaseProduct } = require('./controllers/purchaseController');
+const sellerRoute = require('./Routes/sellerRoute');
+const buyerRoute = require('./Routes/buyerRoute');
 
 
 app.use(cors());  
@@ -25,6 +27,8 @@ app.use('/pdfs', express.static(path.join(__dirname, 'pdfs')));
 app.get('/', (req, res) => {
     res.send('Hello Node API');
 });
+app.use('/api/seller', sellerRoute); 
+app.use('/api/buyer', buyerRoute);
 app.use('/api/users', userRoute);  
 app.use('/api/products', productRoute);  
 app.use('/pdf', productRoute); 
@@ -46,5 +50,3 @@ mongoose.connect(MONGO_URL)
     .catch((error) => {
         console.error('Error connecting to MongoDB:', error.message);
     });
-
-

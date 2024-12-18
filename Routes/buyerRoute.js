@@ -1,8 +1,8 @@
 const express = require('express');
-const { purchaseProduct } = require('../controllers/purchaseController');
+const { getBuyerProducts } = require('../controllers/buyerController');
 const { protect, roleAuth } = require('../middleware/authMiddleware');
 const router = express.Router();
 
-router.post('/purchase/:productId', protect, roleAuth(['buyer']), purchaseProduct);
+router.get('/dashboard', protect, roleAuth(['buyer']), getBuyerProducts);
 
 module.exports = router;
