@@ -8,15 +8,12 @@ const getSellerProducts = asyncHandler(async (req, res) => {
         if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
             const token = req.headers.authorization.split(' ')[1];
             decodedUser = jwt.verify(token, process.env.JWT_SECRET);
-            console.log("Decoded User:", decodedUser);
         } else {
             return res.status(401).json({ message: 'Unauthorized: No token provided.' });
         }
 
-        console.log("Decoded User ID for Query:", decodedUser.id);
 
         const products = await Product.find({ user: decodedUser.id });
-        console.log("Products Found:", products);
 
         if (!products || products.length === 0) {
             console.log("No products found for user ID:", decodedUser.id);

@@ -8,7 +8,6 @@ const getBuyerProducts = asyncHandler(async (req, res) => {
         if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
             const token = req.headers.authorization.split(' ')[1];
             decodedUser = jwt.verify(token, process.env.JWT_SECRET);
-            console.log("Decoded Buyer:", decodedUser);
         } else {
             return res.status(401).json({ message: 'Unauthorized: No token provided.' });
         }
