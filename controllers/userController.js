@@ -1,11 +1,9 @@
 const User = require('../models/userModel');
 const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
 const asyncHandler = require('express-async-handler');
 const nodemailer = require('nodemailer');
 const jwt = require('jsonwebtoken');
 
-// SMTP Transport Configuration
 const transporter = nodemailer.createTransport({
     service: 'Gmail',
     auth: {
@@ -17,7 +15,6 @@ const transporter = nodemailer.createTransport({
 const registerUser = asyncHandler(async (req, res) => {
     const { name, email, password, role } = req.body;
 
-    // Validate input fields
     if (!name || !email || !password || !role) {
         res.status(400);
         throw new Error('Please provide all required fields');
@@ -33,14 +30,20 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new Error('Only the authorized email can register as admin');
     }
 
-
     const userExists = await User.findOne({ email });
     if (userExists) {
         res.status(400);
         throw new Error('User already exists');
     }
 
-    const user = await User.create({ name, email, password, role });
+    const isVerified = role === 'admin' ? true : false; 
+    const user = await User.create({
+        name,
+        email,
+        password,
+        role,
+        isVerified, 
+    });
 
     if (user) {
         res.status(201).json({
@@ -48,6 +51,7 @@ const registerUser = asyncHandler(async (req, res) => {
             name: user.name,
             email: user.email,
             role: user.role,
+            isVerified: user.isVerified,
         });
     } else {
         res.status(400);
@@ -55,22 +59,25 @@ const registerUser = asyncHandler(async (req, res) => {
     }
 });
 
-
 const loginUser = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 
     const user = await User.findOne({ email });
 
-
     if (user && (await bcrypt.compare(password, user.password))) {
+        if (!user.isVerified) {
+            res.status(403);
+            throw new Error('Account not verified by admin');
+        }
 
-        const token = jwt.sign({ id: user._id,role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
-      
+        const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
         res.json({
             _id: user.id,
             name: user.name,
             email: user.email,
             role: user.role,
+            isVerified: user.isVerified,
             token,
         });
     } else {
@@ -78,6 +85,59 @@ const loginUser = asyncHandler(async (req, res) => {
         throw new Error('Invalid email or password');
     }
 });
+
+const adminVerifyUser = asyncHandler(async (req, res) => {
+    const { userId } = req.params;
+
+    if (req.user.role !== 'admin') {
+        res.status(403);
+        throw new Error('Only admin can verify users');
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+        res.status(404);
+        throw new Error('User not found');
+    }
+
+    if (user.isVerified) {
+        res.status(400);
+        throw new Error('User is already verified');
+    }
+
+    user.isVerified = true; 
+    await user.save();
+
+    sendVerificationEmail(user.email);
+
+    res.status(200).json({
+        message: 'User verified successfully',
+        user: {
+            _id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            isVerified: user.isVerified,
+        },
+    });
+});
+
+const sendVerificationEmail = async (email) => {
+    const mailOptions = {
+        from: process.env.SMTP_USER,
+        to: email,
+        subject: 'Account Verified',
+        text: 'Your account has been successfully verified by the admin. You can now log in to your account.',
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+            console.error(error);
+        } else {
+            console.log('Verification email sent: ' + info.response);
+        }
+    });
+};
 
 const getUserProfile = asyncHandler(async (req, res) => {
     const user = await User.findById(req.user.id).select('-password');
@@ -140,4 +200,4 @@ const resetPassword = asyncHandler(async (req, res) => {
     res.status(200).json({ message: 'Password reset successful' });
 });
 
-module.exports = { registerUser, loginUser, getUserProfile, forgotPassword, resetPassword };
+module.exports = { registerUser, loginUser, getUserProfile, forgotPassword, resetPassword, adminVerifyUser };

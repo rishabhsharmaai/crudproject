@@ -1,4 +1,5 @@
 const express = require('express');
+const { adminVerifyUser } = require('../controllers/userController');
 const {
     registerUser,
     loginUser,
@@ -12,6 +13,7 @@ const { protect } = require('../middleware/authMiddleware');
 const router = express.Router();
 
 router.post('/register', registerUser); 
+router.put('/admin/verify/userId:',adminVerifyUser)
 router.post('/login', loginUser); 
 
 router.get('/profile', protect, getUserProfile); 

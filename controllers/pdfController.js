@@ -10,7 +10,7 @@ const generatePDF = asyncHandler(async (req, res) => {
     const { proId } = req.params;
     let user
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-        token = req.headers.authorization.split(' ')[1];
+        token = req.headers.authorization.split(' ')[1]; 
         user = decode = jwt.decode(token, process.env.JWT_SECRET)
     }
 
@@ -21,9 +21,9 @@ const generatePDF = asyncHandler(async (req, res) => {
             return res.status(404).json({ message: 'Product not found' });
         }
 
-        // if (user.role === 'seller' && String(product.user._id) !== String(user.id)) {
-        //     return res.status(403).json({ message: 'Access forbidden: cannot generate PDF for this product' });
-        // }
+        if (user.role === 'seller' && String(product.user._id) !== String(user.id)) {
+             return res.status(403).json({ message: 'Access forbidden: cannot generate PDF for this product' });
+         }
 
         if (user.role === 'buyer' && (!product.isSold || String(product.buyer?._id) !== String(user.id))) {
             return res.status(403).json({ message: 'Access forbidden: this product is not associated with you' });

@@ -19,14 +19,18 @@ const userSchema = new mongoose.Schema(
         role: {
             type: String,
             enum: ['admin', 'seller', 'buyer'],
-            default:'buyer'
+            default: 'buyer',
+        },
+        isVerified: { 
+            type: Boolean,
+            default: false, 
         },
         resetPasswordOTP: {
             type: String,
         },
         resetPasswordExpire: {
             type: Date,
-        }
+        },
     },
     { timestamps: true }
 );

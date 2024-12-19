@@ -3,7 +3,7 @@ const asyncHandler = require('express-async-handler');
 
 const getAllUsers = asyncHandler(async (req, res) => {
     try {
-        const users = await User.find({}, 'name email role createdAt updatedAt'); 
+        const users = await User.find(); 
         res.status(200).json({
             message: 'Users fetched successfully',
             users,

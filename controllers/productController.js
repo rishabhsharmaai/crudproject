@@ -47,7 +47,7 @@ const createProduct = asyncHandler(async (req, res) => {
         });
         if (!subcategory) {
             return res.status(400).json({
-                message: 'Invalid subcategory or it does not belong to the specified parent category',
+                message: 'Invalid subcategory',
             });
         }
 

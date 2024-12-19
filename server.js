@@ -38,6 +38,7 @@ app.use('/api/categories', categoryRoute);
 app.use('/api', purchaseProduct);
 app.use('/api', purchaseRoute);  
 
+
 app.use(errorMiddleware);
 
 mongoose.set("strictQuery", false);

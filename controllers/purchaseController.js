@@ -63,7 +63,7 @@ const purchaseProduct = asyncHandler(async (req, res) => {
         const purchaseData = {
             buyer: decodedUser.id,
             product: productId,
-            status: "Pending"
+            status: "Purchased"
         }
         const newPurchase = await Purchase.create(purchaseData)
         console.log(newPurchase)
