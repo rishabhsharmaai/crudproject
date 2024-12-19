@@ -15,7 +15,7 @@ const router = express.Router();
 router.post('/register', registerUser); 
 
 router.post('/login', loginUser); 
-router.put('/admin/verify/userId:',adminVerifyUser)
+router.put('/admin/verify/:userId',protect,adminVerifyUser)
 router.get('/profile', protect, getUserProfile); 
 
 router.post('/forgot-password', forgotPassword); 
