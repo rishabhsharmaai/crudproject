@@ -20,7 +20,7 @@ const purchaseProduct = asyncHandler(async (req, res) => {
         let decodedUser;
         if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
             const token = req.headers.authorization.split(' ')[1];
-            decodedUser = jwt.verify(token, process.env.JWT_SECRET); 
+            decodedUser = jwt.verify(token, process.env.JWT_SECRET);
             console.log("Decoded User:", decodedUser);
         } else {
             return res.status(401).json({ message: 'Unauthorized: No token provided.' });
@@ -35,8 +35,8 @@ const purchaseProduct = asyncHandler(async (req, res) => {
             return res.status(404).json({ message: 'User not found.' });
         }
 
-        const product = await Product.findById(productId).session(session); 
-        console.log("Product Query Result:", product); 
+        const product = await Product.findById(productId).session(session);
+        console.log("Product Query Result:", product);
 
         if (!product) {
             return res.status(404).json({ message: 'Product not found.' });
@@ -47,26 +47,29 @@ const purchaseProduct = asyncHandler(async (req, res) => {
         }
 
         const updatedProduct = await Product.updateOne(
-            { _id: productId, isSold: false }, 
+            { _id: productId, isSold: false },
             {
                 $set: {
                     isSold: true,
                     buyer: decodedUser.id
                 }
-            }).session(session); 
+            }).session(session);
+
         if (updatedProduct.nModified === 0) {
             return res.status(400).json({ message: "Failed to update product. It may already be marked as sold." });
         }
-        
-        await session.commitTransaction();
-        session.endSession();
+
         const purchaseData = {
             buyer: decodedUser.id,
             product: productId,
-            status: "Purchased"
-        }
-        const newPurchase = await Purchase.create(purchaseData)
-        console.log(newPurchase)
+            status: "Completed"
+        };
+        const newPurchase = await Purchase.create([purchaseData], { session });
+        console.log(newPurchase);
+
+        await session.commitTransaction();
+        session.endSession();
+
         res.status(200).json({
             message: 'Purchase successful',
             product: {
@@ -83,7 +86,6 @@ const purchaseProduct = asyncHandler(async (req, res) => {
                 message: 'The product will be delivered soon to your address.',
             },
         });
-
     } catch (error) {
         await session.abortTransaction();
         session.endSession();
