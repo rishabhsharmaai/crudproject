@@ -1,9 +1,9 @@
 const Product = require('../models/productModel');
-const User = require("../models/userModel");
+const User = require('../models/userModel');
 const asyncHandler = require('express-async-handler');
-const Purchase = require("../models/puchaseModel")
-const jwt = require("jsonwebtoken");
-const mongoose = require("mongoose");
+const Purchase = require('../models/puchaseModel');
+const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 
 const purchaseProduct = asyncHandler(async (req, res) => {
     const session = await mongoose.startSession();
@@ -14,24 +14,31 @@ const purchaseProduct = asyncHandler(async (req, res) => {
         console.log("Received Product ID:", productId);
 
         if (!mongoose.isValidObjectId(productId)) {
+            console.error("Invalid product ID format received:", productId);
             return res.status(400).json({ message: "Invalid product ID format." });
         }
-
         let decodedUser;
         if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
             const token = req.headers.authorization.split(' ')[1];
-            decodedUser = jwt.verify(token, process.env.JWT_SECRET);
-            console.log("Decoded User:", decodedUser);
+            try {
+                decodedUser = jwt.verify(token, process.env.JWT_SECRET);
+                console.log("Decoded User:", decodedUser);
+            } catch (err) {
+                console.error("Token verification failed:", err.message);
+                return res.status(401).json({ message: 'Unauthorized: Invalid token.' });
+            }
         } else {
             return res.status(401).json({ message: 'Unauthorized: No token provided.' });
         }
 
         if (!decodedUser || decodedUser.role !== 'buyer') {
+            console.error("Access denied: Only buyers can purchase products.");
             return res.status(403).json({ message: 'Access forbidden: only buyers can purchase products.' });
         }
 
         const userDetails = await User.findById(decodedUser.id);
         if (!userDetails) {
+            console.error("User not found for ID:", decodedUser.id);
             return res.status(404).json({ message: 'User not found.' });
         }
 
@@ -48,12 +55,8 @@ const purchaseProduct = asyncHandler(async (req, res) => {
 
         const updatedProduct = await Product.updateOne(
             { _id: productId, isSold: false },
-            {
-                $set: {
-                    isSold: true,
-                    buyer: decodedUser.id
-                }
-            }).session(session);
+            { $set: { isSold: true, buyer: decodedUser.id } }
+        ).session(session);
 
         if (updatedProduct.nModified === 0) {
             return res.status(400).json({ message: "Failed to update product. It may already be marked as sold." });
@@ -65,7 +68,7 @@ const purchaseProduct = asyncHandler(async (req, res) => {
             status: "Completed"
         };
         const newPurchase = await Purchase.create([purchaseData], { session });
-        console.log(newPurchase);
+        console.log("Purchase Record Created:", newPurchase);
 
         await session.commitTransaction();
         session.endSession();

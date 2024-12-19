@@ -28,15 +28,16 @@ app.use('/pdfs', express.static(path.join(__dirname, 'pdfs')));
 app.get('/', (req, res) => {
     res.send('Hello Node API');
 });
+app.use('/api/users', userRoute); 
+app.use('/api/products', productRoute);  
+app.use('/api/admin',adminRoute);
+app.use('/api/categories', categoryRoute);
+app.use('/api', purchaseRoute); 
+app.use('/api', purchaseProduct);
+app.use('/pdf', productRoute); 
 app.use('/api/seller', sellerRoute); 
 app.use('/api/buyer', buyerRoute);
-app.use('/api/admin',adminRoute);
-app.use('/api/users', userRoute);  
-app.use('/api/products', productRoute);  
-app.use('/pdf', productRoute); 
-app.use('/api/categories', categoryRoute);
-app.use('/api', purchaseProduct);
-app.use('/api', purchaseRoute);  
+ 
 
 
 app.use(errorMiddleware);

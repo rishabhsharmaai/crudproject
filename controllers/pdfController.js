@@ -16,7 +16,6 @@ const generatePDF = asyncHandler(async (req, res) => {
 
     try {
         const product = await Product.findById(proId).populate('user');
-        console.log(product,user)
         if (!product) {
             return res.status(404).json({ message: 'Product not found' });
         }
