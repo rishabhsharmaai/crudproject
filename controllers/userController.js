@@ -36,13 +36,13 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new Error('User already exists');
     }
 
-    const isVerified = role === 'admin' ? true : false; 
+    const isVerified = role === 'admin' ? true : false;
     const user = await User.create({
         name,
         email,
         password,
         role,
-        isVerified, 
+        isVerified,
     });
 
     if (user) {
@@ -62,9 +62,25 @@ const registerUser = asyncHandler(async (req, res) => {
 const loginUser = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 
+    if (!email || !password) {
+        res.status(400);
+        throw new Error('Please provide both email and password');
+    }
+
     const user = await User.findOne({ email });
 
-    if (user && (await bcrypt.compare(password, user.password))) {
+    if (!user) {
+        res.status(404);
+        throw new Error('User not found');
+    }
+
+    console.log('User Password in DB:', user.password); 
+    console.log('Plaintext Password:', password);      
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    console.log('Password Match Result:', isMatch); 
+
+    if (isMatch) {
         if (!user.isVerified) {
             res.status(403);
             throw new Error('Account not verified by admin');
@@ -105,7 +121,7 @@ const adminVerifyUser = asyncHandler(async (req, res) => {
         throw new Error('User is already verified');
     }
 
-    user.isVerified = true; 
+    user.isVerified = true;
     await user.save();
 
     sendVerificationEmail(user.email);
@@ -156,8 +172,8 @@ const forgotPassword = asyncHandler(async (req, res) => {
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
     user.resetPasswordOTP = otp;
     user.resetPasswordExpire = Date.now() + 30 * 60 * 1000;
-    await user.save();
-
+    const data = await user.save();
+    console.log(data)
     const mailOptions = {
         from: process.env.SMTP_USER,
         to: email,
@@ -178,7 +194,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
 
 const resetPassword = asyncHandler(async (req, res) => {
     const { email, otp, newPassword } = req.body;
-
+    console.log(email, otp, newPassword)
     const user = await User.findOne({ email });
     if (!user) {
         res.status(404);
@@ -190,12 +206,12 @@ const resetPassword = asyncHandler(async (req, res) => {
         throw new Error('Invalid or expired OTP');
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    user.password = hashedPassword;
+    user.password = newPassword;
     user.resetPasswordOTP = undefined;
     user.resetPasswordExpire = undefined;
-    await user.save();
+    const data = await user.save();
+    console.log(data)
 
     res.status(200).json({ message: 'Password reset successful' });
 });

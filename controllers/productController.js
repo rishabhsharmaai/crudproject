@@ -30,10 +30,12 @@ const createProduct = asyncHandler(async (req, res) => {
     try {
         const { name, price, quantity, user, parentCategory, subCategory } = req.body;
 
-        
-
         if (!name || !price || !quantity || !user || !parentCategory || !subCategory) {
             return res.status(400).json({ message: 'Missing required fields' });
+        }
+
+        if (quantity < 5) {
+            return res.status(400).json({ message: 'The product must have a minimum quantity of 5' });
         }
 
         const parent = await Category.findById(parentCategory);
@@ -79,6 +81,7 @@ const createProduct = asyncHandler(async (req, res) => {
     }
 });
 
+
 const updateById = asyncHandler(async (req, res) => {
     try {
         const { id } = req.params;
@@ -101,7 +104,6 @@ const updateById = asyncHandler(async (req, res) => {
 const deleteById = asyncHandler(async (req, res) => {
     try {
         const { id } = req.params;
-
         const product = await Product.findByIdAndDelete(id);
 
         if (product) {
