@@ -20,13 +20,17 @@ const purchaseProduct = asyncHandler(async (req, res) => {
         let decodedUser;
         if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
             const token = req.headers.authorization.split(' ')[1];
-            decodedUser = jwt.verify(token, process.env.JWT_SECRET);
+            try {
+                decodedUser = jwt.verify(token, process.env.JWT_SECRET);
+            } catch (err) {
+                return res.status(401).json({ message: 'Unauthorized: Invalid or expired token.' });
+            }
         } else {
             return res.status(401).json({ message: 'Unauthorized: No token provided.' });
         }
 
-        if (!decodedUser || decodedUser.role !== 'buyer') {
-            return res.status(403).json({ message: 'Access forbidden: only buyers can purchase products.' });
+        if (decodedUser.role !== 'buyer') {
+            return res.status(403).json({ message: 'Access forbidden: Only buyers can purchase products.' });
         }
 
         const userDetails = await User.findById(decodedUser.id);
@@ -39,12 +43,16 @@ const purchaseProduct = asyncHandler(async (req, res) => {
             return res.status(404).json({ message: 'Product not found.' });
         }
 
-        if (product.isSold || product.quantity <= 0) {
-            return res.status(400).json({ message: 'Product is out of stock or already sold.' });
+        if (product.isSold) {
+            return res.status(400).json({ message: 'Product is already sold.' });
         }
 
-        // Decrement quantity and check if product is sold out
+        if (product.quantity <= 0) {
+            return res.status(400).json({ message: 'Product is out of stock.' });
+        }
+
         product.quantity -= 1;
+        product.buyer=decodedUser.id
         if (product.quantity <= 0) {
             product.quantity = 0;
             product.isSold = true;
@@ -52,7 +60,6 @@ const purchaseProduct = asyncHandler(async (req, res) => {
 
         await product.save({ session });
 
-        // Notify seller if quantity is below the threshold
         if (product.quantity < 5) {
             const seller = await User.findById(product.user);
             if (seller && seller.email) {
@@ -66,16 +73,21 @@ const purchaseProduct = asyncHandler(async (req, res) => {
             }
         }
 
-        // Create purchase record
         const purchaseData = {
             buyer: decodedUser.id,
             product: productId,
-            status: "Completed",
+            status: 'Completed',
+            productName: product.name, 
+            productPrice: product.price
         };
         const newPurchase = await Purchase.create([purchaseData], { session });
 
         await session.commitTransaction();
         session.endSession();
+
+        const message = product.quantity === 0 
+            ? 'This product is now sold out.' 
+            : 'The product will be delivered soon to your address.';
 
         res.status(200).json({
             message: 'Purchase successful',
@@ -90,7 +102,7 @@ const purchaseProduct = asyncHandler(async (req, res) => {
                     name: userDetails.name,
                     email: userDetails.email,
                 },
-                message: product.quantity === 0 ? 'This product is now sold out.' : 'The product will be delivered soon to your address.',
+                message: message,
             },
         });
     } catch (error) {

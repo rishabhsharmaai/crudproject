@@ -9,15 +9,16 @@ const fs = require('fs');
 const generatePDF = asyncHandler(async (req, res) => {
     const { proId } = req.params;
     let user;
+
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-        token = req.headers.authorization.split(' ')[1];
+        const token = req.headers.authorization.split(' ')[1];
         user = jwt.decode(token, process.env.JWT_SECRET);
     }
 
     try {
         const product = await Product.findById(proId)
             .populate('user')  
-            .populate('buyer');  
+            .populate('buyer'); 
 
         if (!product) {
             return res.status(404).json({ message: 'Product not found' });
@@ -35,64 +36,71 @@ const generatePDF = asyncHandler(async (req, res) => {
         const writeStream = fs.createWriteStream(filePath);
         doc.pipe(writeStream);
 
+        doc.fontSize(24).font('Helvetica-Bold').text('Order Summary', { align: 'center', underline: true });
+        doc.moveDown(2);
+
+        const detailsTop = doc.y;
+        doc.fontSize(12).text(
+            `Product ID: ${product._id}\nName: ${product.name}\nQuantity: 1`, 
+            50,
+            detailsTop
+        );
+
+        if ( product.buyer) {
+            doc.text(
+                `\nBuyer Name: ${product.buyer.name || 'N/A'}\nBuyer Email: ${product.buyer.email || 'N/A'}`,
+                300,
+                detailsTop
+            );
+        } else {
+            doc.text('\nBuyer details not available.', 300, detailsTop);
+        }
+
+        doc.moveDown(2);
+        doc.strokeColor('#000').lineWidth(1).moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+        doc.moveDown(1);
+
+        const paymentSummary = doc.y;
         if (product.image) {
             const imagePath = path.join(__dirname, '../uploads', product.image.split('/uploads/')[1]);
             const isImageLocal = fs.existsSync(imagePath);
-
+        
             try {
+                const imageWidth = 200; 
+                const totalPosition = paymentSummary + 90; 
+                const availableHeight = totalPosition - paymentSummary; 
+                const imageHeight = availableHeight > 0 ? availableHeight : 200;
+        
                 if (isImageLocal) {
-                    doc.image(imagePath, 400, 50, { width: 150, height: 150 });
+                    doc.image(imagePath, 50, paymentSummary, { width: imageWidth, height: imageHeight });
                 } else {
                     const response = await axios.get(product.image, { responseType: 'arraybuffer' });
                     const imageBuffer = Buffer.from(response.data, 'binary');
-                    doc.image(imageBuffer, 400, 50, { width: 150, height: 150 });
+                    doc.image(imageBuffer, 50, paymentSummary, { width: imageWidth, height: imageHeight });
                 }
             } catch (error) {
                 console.log('Error fetching remote image:', error.message);
-                doc.text('Image could not be loaded.');
+                doc.text('Image could not be loaded.', 50, paymentSummary);
             }
         }
 
-        doc.fontSize(20).text('Product Details', { align: 'center' });
-        doc.moveDown(3);
-        doc.fontSize(15).text(`Product ID: ${product._id}`);
-        doc.text(`Name: ${product.name}`);
-        doc.text(`Quantity: ${product.quantity}`);
-        doc.text(`Price: ${product.price}`);
-        doc.moveDown();
+        doc.text('Payment Details:', 300, paymentSummary, { underline: true });
+        doc.text(`Price: ${product.price}`, 300, paymentSummary + 30);
 
-        if (product.isSold) {
-            if (user.role === 'admin' || user.role === 'seller') {
-                if (product.buyer) {
-                    doc.fontSize(18).text('Buyer Details', { underline: true });
-                    doc.moveDown();
-                    doc.text(`Name: ${product.buyer?.name || 'N/A'}`);
-                    doc.text(`Email: ${product.buyer?.email || 'N/A'}`);
-                } else {
-                    doc.text('Buyer information is missing.');
-                }
-            }
-
-            if (user.role === 'buyer') {
-                doc.fontSize(18).text('Your Details (Buyer)', { underline: true });
-                doc.moveDown();
-                doc.text(`Name: ${product.buyer ? product.buyer.name : 'N/A'}`);
-                doc.text(`Email: ${product.buyer ? product.buyer.email : 'N/A'}`);
-                doc.text('Your product will be delivered soon.');
-            }
+        if (product.price < 10000) {
+            doc.text(`Shipping Charges: 100`, 300, paymentSummary + 50);
         } else {
-            if (user.role === 'admin' || user.role === 'seller') {
-                doc.fontSize(18).text('Product Not Sold Yet', { underline: true });
-                doc.moveDown();
-                doc.text('The product is still looking for a buyer.');
-            }
-
-            if (user.role === 'buyer') {
-                doc.fontSize(18).text('Product Not Sold Yet', { underline: true });
-                doc.moveDown();
-                doc.text('The product you are trying to buy is not yet sold.');
-            }
+            doc.text(`Shipping Charges: 0`, 300, paymentSummary + 50);
         }
+
+        const total = product.price + (product.price < 10000 ? 100 : 0);
+        doc.strokeColor('#000').lineWidth(1).moveTo(300, paymentSummary + 80).lineTo(550, paymentSummary + 80).stroke();
+        doc.text(`Total: ${total}`, 300, paymentSummary + 90);
+
+        doc.moveDown(2);
+        doc.strokeColor('#000').lineWidth(1).moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+        doc.moveDown(1);
+        doc.text('Thank you for shopping with us. Your product will be delivered soon.', 50, doc.y);
 
         doc.end();
 

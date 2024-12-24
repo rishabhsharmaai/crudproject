@@ -73,12 +73,9 @@ const loginUser = asyncHandler(async (req, res) => {
         res.status(404);
         throw new Error('User not found');
     }
-
-    console.log('User Password in DB:', user.password); 
-    console.log('Plaintext Password:', password);      
+    
 
     const isMatch = await bcrypt.compare(password, user.password);
-    console.log('Password Match Result:', isMatch); 
 
     if (isMatch) {
         if (!user.isVerified) {
@@ -172,8 +169,6 @@ const forgotPassword = asyncHandler(async (req, res) => {
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
     user.resetPasswordOTP = otp;
     user.resetPasswordExpire = Date.now() + 30 * 60 * 1000;
-    const data = await user.save();
-    console.log(data)
     const mailOptions = {
         from: process.env.SMTP_USER,
         to: email,
@@ -194,7 +189,6 @@ const forgotPassword = asyncHandler(async (req, res) => {
 
 const resetPassword = asyncHandler(async (req, res) => {
     const { email, otp, newPassword } = req.body;
-    console.log(email, otp, newPassword)
     const user = await User.findOne({ email });
     if (!user) {
         res.status(404);
@@ -210,8 +204,6 @@ const resetPassword = asyncHandler(async (req, res) => {
     user.password = newPassword;
     user.resetPasswordOTP = undefined;
     user.resetPasswordExpire = undefined;
-    const data = await user.save();
-    console.log(data)
 
     res.status(200).json({ message: 'Password reset successful' });
 });
