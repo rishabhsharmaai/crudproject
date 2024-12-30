@@ -21,6 +21,10 @@ const userSchema = new mongoose.Schema(
             enum: ['admin', 'seller', 'buyer'],
             default: 'buyer',
         },
+        address:{
+            type:String,
+            required:true
+        },
         isVerified: { 
             type: Boolean,
             default: false, 

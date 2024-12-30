@@ -13,9 +13,9 @@ const purchaseProduct = asyncHandler(async (req, res) => {
     try {
         const { productId } = req.body;
 
-        if (!mongoose.isValidObjectId(productId)) {
-            return res.status(400).json({ message: "Invalid product ID format." });
-        }
+        // if (!mongoose.isValidObjectId(productId)) {
+        //     return res.status(400).json({ message: "Invalid product ID format." });
+        // }
 
         let decodedUser;
         if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
@@ -78,7 +78,8 @@ const purchaseProduct = asyncHandler(async (req, res) => {
             product: productId,
             status: 'Completed',
             productName: product.name, 
-            productPrice: product.price
+            productPrice: product.price,
+            productAddress: product.address
         };
         const newPurchase = await Purchase.create([purchaseData], { session });
 
@@ -101,6 +102,7 @@ const purchaseProduct = asyncHandler(async (req, res) => {
                     id: userDetails._id,
                     name: userDetails.name,
                     email: userDetails.email,
+                    address : userDetails.address,
                 },
                 message: message,
             },

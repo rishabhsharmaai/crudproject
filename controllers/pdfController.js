@@ -45,10 +45,11 @@ const generatePDF = asyncHandler(async (req, res) => {
             50,
             detailsTop
         );
+        console.log(product.buyer)
 
         if ( product.buyer) {
             doc.text(
-                `\nBuyer Name: ${product.buyer.name || 'N/A'}\nBuyer Email: ${product.buyer.email || 'N/A'}`,
+                `\nBuyer Name: ${product.buyer.name || 'N/A'}\nBuyer Email: ${product.buyer.email || 'N/A'}\nBuyer Address: ${product.buyer.address || 'N/A'}`,
                 300,
                 detailsTop
             );

@@ -13,9 +13,9 @@ const transporter = nodemailer.createTransport({
 });
 
 const registerUser = asyncHandler(async (req, res) => {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role,address } = req.body;
 
-    if (!name || !email || !password || !role) {
+    if (!name || !email || !password || !role || !address) {
         res.status(400);
         throw new Error('Please provide all required fields');
     }
@@ -42,6 +42,7 @@ const registerUser = asyncHandler(async (req, res) => {
         email,
         password,
         role,
+        address,
         isVerified,
     });
 
@@ -51,6 +52,7 @@ const registerUser = asyncHandler(async (req, res) => {
             name: user.name,
             email: user.email,
             role: user.role,
+            address: user.address,
             isVerified: user.isVerified,
         });
     } else {
@@ -90,6 +92,7 @@ const loginUser = asyncHandler(async (req, res) => {
             name: user.name,
             email: user.email,
             role: user.role,
+            address : user.address,
             isVerified: user.isVerified,
             token,
         });
@@ -130,6 +133,7 @@ const adminVerifyUser = asyncHandler(async (req, res) => {
             name: user.name,
             email: user.email,
             role: user.role,
+            address: user.address,
             isVerified: user.isVerified,
         },
     });
