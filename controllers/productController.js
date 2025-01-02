@@ -48,11 +48,11 @@ const createProduct = asyncHandler(async (req, res) => {
             _id: subCategory,
             parentCategory: parentCategory,
         });
-        // if (!subcategory) {
-        //     return res.status(400).json({
-        //         message: 'Invalid subcategory',
-        //     });
-        // }
+        if (!subcategory) {
+            return res.status(400).json({
+                message: 'Invalid subcategory',
+            });
+        }
 
         if (!req.file) {
             return res.status(400).json({ message: 'Image is required' });

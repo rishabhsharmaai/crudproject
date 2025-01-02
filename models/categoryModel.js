@@ -5,6 +5,9 @@ const categorySchema = new mongoose.Schema({
         type: String,
         required: [true, "Category name is required"],
         unique: true
+    },
+    parentCategory:{
+        type:mongoose.Schema.Types.ObjectId,
     }
 }, {
     timestamps: true 

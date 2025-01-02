@@ -8,6 +8,8 @@ const productSchema = new mongoose.Schema({
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, 
     isSold: { type: Boolean, default: false }, 
     buyer: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }, 
+    parentCategory:{type:mongoose.Schema.Types.ObjectId },
+    subCategory:{type:mongoose.Schema.Types.ObjectId},
     createdAt: { type: Date, default: Date.now }
 });
 
