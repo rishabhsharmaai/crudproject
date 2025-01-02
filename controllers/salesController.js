@@ -19,7 +19,7 @@ const getSalesData = async (req, res) => {
             },
             {
                 $match: {
-                    purchaseMonth: monthNumber 
+                    purchaseMonth: monthNumber,
                 }
             },
             {

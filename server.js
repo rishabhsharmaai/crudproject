@@ -19,6 +19,7 @@ const { purchaseProduct } = require('./controllers/purchaseController');
 const sellerRoute = require('./Routes/sellerRoute');
 const buyerRoute = require('./Routes/buyerRoute');
 const reviewRoutes = require('./Routes/reviewRoute');
+const wishlistRoute = require('./Routes/wishlistRoute');
 
 
 app.use(cors());  
@@ -31,6 +32,7 @@ app.get('/', (req, res) => {
     res.send('Hello Node API');
 });
 app.use('/api/products', productRoute); 
+app.use('/api',wishlistRoute);
 app.use('/api/users', userRoute); 
 app.use('/api/admin',adminRoute);
 app.use('/api/buyer', buyerRoute);
