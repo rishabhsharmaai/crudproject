@@ -9,8 +9,9 @@ const MONGO_URL = process.env.MONGO_URL;
 const PORT = process.env.PORT || 3000;
 
 const errorMiddleware = require('./middleware/errorMiddleware');
-const userRoute = require('./Routes/userRoute');
 const productRoute = require('./Routes/productRoute');
+const userRoute = require('./Routes/userRoute');
+const salesRoute = require('./Routes/salesRoute');
 const adminRoute = require('./Routes/adminRoute');
 const categoryRoute = require('./Routes/categoryRoute');
 const purchaseRoute = require('./Routes/purchaseRoute'); 
@@ -29,20 +30,20 @@ app.use('/pdfs', express.static(path.join(__dirname, 'pdfs')));
 app.get('/', (req, res) => {
     res.send('Hello Node API');
 });
-
+app.use('/api/products', productRoute); 
 app.use('/api/users', userRoute); 
 app.use('/api/admin',adminRoute);
 app.use('/api/buyer', buyerRoute);
 app.use('/api/seller', sellerRoute); 
 app.use('/api/reviews', reviewRoutes);
-app.use('/api/products', productRoute);  
+app.use('/api', salesRoute);
 
 app.use('/api/categories', categoryRoute);
 app.use('/api', purchaseRoute); 
 app.use('/api', purchaseProduct);
 app.use('/pdf', productRoute); 
 
- 
+app.use('/api/products', productRoute); 
 
 
 app.use(errorMiddleware);

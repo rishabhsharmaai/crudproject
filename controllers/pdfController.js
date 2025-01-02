@@ -88,7 +88,7 @@ const generatePDF = asyncHandler(async (req, res) => {
         doc.text('Payment Details:', 300, paymentSummary, { underline: true });
         doc.text(`Price: ${product.price}`, 300, paymentSummary + 30);
 
-        if (product.price < 10000) {
+        if (product.price < 1000) {
             doc.text(`Shipping Charges: 100`, 300, paymentSummary + 50);
         } else {
             doc.text(`Shipping Charges: 0`, 300, paymentSummary + 50);

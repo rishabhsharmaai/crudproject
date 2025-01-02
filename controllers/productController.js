@@ -2,6 +2,7 @@ const Product = require('../models/productModel');
 const Category = require('../models/categoryModel');
 const asyncHandler = require('express-async-handler');
 
+
 const getAllProducts = asyncHandler(async (req, res) => {
     try {
         const products = await Product.find({}).populate('category', 'name');
@@ -47,11 +48,11 @@ const createProduct = asyncHandler(async (req, res) => {
             _id: subCategory,
             parentCategory: parentCategory,
         });
-        if (!subcategory) {
-            return res.status(400).json({
-                message: 'Invalid subcategory',
-            });
-        }
+        // if (!subcategory) {
+        //     return res.status(400).json({
+        //         message: 'Invalid subcategory',
+        //     });
+        // }
 
         if (!req.file) {
             return res.status(400).json({ message: 'Image is required' });
